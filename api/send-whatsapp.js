@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const config = getConfig()
+    const config = getConfig('whatsapp')
     const body = req.body || {}
     const mobile = String(body.mobile || '').trim()
     const name = String(body.name || '').trim()

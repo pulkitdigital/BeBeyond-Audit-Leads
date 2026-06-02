@@ -3,7 +3,7 @@
  * ─────────────────────────────────────────────────────────────
  * Dependencies:
  *   npm install react-icons
- *   (No extra email library — Mailersend uses fetch API directly)
+ *   (No extra email library — serverless API uses fetch directly)
  *
  * Setup:
  *   1. Copy .env.example → .env.local and fill in your values
@@ -21,7 +21,23 @@ import { MdBusiness } from 'react-icons/md'
 const GOOGLE_SHEET_URL = import.meta.env.VITE_GOOGLE_SHEET_URL
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ─── Mailersend helper ────────────────────────────────────────────────────────
+/**
+ * Extracts a human-readable API error message.
+ *
+ * @param {any} err
+ * @param {string} fallback
+ * @returns {string}
+ */
+function apiErrorMessage(err, fallback) {
+  if (!err) return fallback
+  if (typeof err === 'string') return err
+  if (typeof err?.error === 'string') return err.error
+  if (typeof err?.error?.message === 'string') return err.error.message
+  if (typeof err?.message === 'string') return err.message
+  return fallback
+}
+
+// ─── API helpers ──────────────────────────────────────────────────────────────
 async function sendEmail({ to_email, to_name, subject, html, audience }) {
   const res = await fetch('/api/send-email', {
     method: 'POST',
@@ -30,7 +46,7 @@ async function sendEmail({ to_email, to_name, subject, html, audience }) {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err?.error || `Email error ${res.status}`)
+    throw new Error(apiErrorMessage(err, `Email error ${res.status}`))
   }
 }
 
@@ -43,7 +59,7 @@ async function sendWhatsApp({ mobile, name, businessName, auditType }) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err?.error || `WhatsApp error ${res.status}`)
+    throw new Error(apiErrorMessage(err, `WhatsApp error ${res.status}`))
   }
 }
 

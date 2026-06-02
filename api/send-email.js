@@ -15,7 +15,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const config = getConfig()
+    const config = getConfig('email')
     const body = req.body || {}
     const audience = body.audience === 'admin' ? 'admin' : 'customer'
 
