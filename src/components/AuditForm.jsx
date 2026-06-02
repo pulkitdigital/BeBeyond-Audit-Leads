@@ -167,9 +167,10 @@ const initialState = {
 }
 
 export default function AuditForm() {
-  const [form, setForm]     = useState(initialState)
-  const [errors, setErrors] = useState({})
-  const [status, setStatus] = useState('idle') // idle | loading | success | error
+  const [form, setForm]                   = useState(initialState)
+  const [errors, setErrors]               = useState({})
+  const [status, setStatus]               = useState('idle') // idle | loading | success | error
+  const [whatsappWarning, setWhatsappWarning] = useState(false) // ← NEW
 
   // ── Validation ────────────────────────────────────────────────────────────
   const validate = () => {
@@ -249,6 +250,7 @@ export default function AuditForm() {
     if (Object.keys(errs).length) { setErrors(errs); return }
 
     setStatus('loading')
+    setWhatsappWarning(false) // ← reset on each submit
 
     const auditLabel =
       form.auditType === 'both'      ? 'Instagram + Website' :
@@ -293,13 +295,14 @@ export default function AuditForm() {
       // 4. WhatsApp template message (non-blocking)
       try {
         await sendWhatsApp({
-          mobile: form.mobile,
-          name: form.name,
+          mobile:       form.mobile,
+          name:         form.name,
           businessName: form.businessName,
-          auditType: auditLabel,
+          auditType:    auditLabel,
         })
       } catch (whatsappError) {
-        console.error('WhatsApp send failed:', whatsappError)
+        console.error('WhatsApp send failed:', whatsappError?.message || whatsappError)
+        setWhatsappWarning(true) // ← show warning banner on success screen
       }
 
       setStatus('success')
@@ -330,11 +333,20 @@ export default function AuditForm() {
           <p className="text-white/50 text-sm mb-2">
             ✅ Confirmation email sent to <span className="text-white/70">{form.email}</span>
           </p>
-          <p className="text-white/50 text-sm mb-8">
-            📱 WhatsApp confirmation will be sent to +91 {form.mobile}
-          </p>
+
+          {/* WhatsApp status — shows warning if failed, normal message if ok */}
+          {whatsappWarning ? (
+            <p className="text-amber-400 text-sm mb-8 bg-amber-400/10 border border-amber-400/20 rounded-xl py-2.5 px-4">
+              ⚠️ WhatsApp message deliver nahi hua. Hum jald contact karenge.
+            </p>
+          ) : (
+            <p className="text-white/50 text-sm mb-8">
+              📱 WhatsApp confirmation sent to +91 {form.mobile}
+            </p>
+          )}
+
           <button
-            onClick={() => { setForm(initialState); setStatus('idle') }}
+            onClick={() => { setForm(initialState); setStatus('idle'); setWhatsappWarning(false) }}
             className="px-8 py-3 rounded-xl bg-white/10 border border-white/20 text-white text-sm font-semibold
               hover:bg-white/15 transition-all duration-200"
           >

@@ -1,25 +1,42 @@
 # BeBeyond Event Form
 
-A Vite + React lead capture form for BeBeyond Digital that:
+Production-ready lead capture app for **BeBeyond Digital**. Built with Vite + React on the frontend and **Vercel serverless functions** for email and WhatsApp—no Express, NestJS, or separate Node server.
 
-- collects audit requests from users,
-- stores submissions in Google Sheets,
-- sends customer and admin emails via Brevo API,
-- sends a WhatsApp Cloud API template message after successful submission.
+## Features
 
-This project uses **Vercel serverless routes** in the `api/` folder.  
-There is **no Express/NestJS/separate Node backend**.
+- Multi-step audit request form with client-side validation
+- Google Sheets lead storage via Apps Script webhook
+- Customer + admin transactional emails via **Brevo API v3**
+- Post-submit WhatsApp template message via **Meta Cloud API**
+- Server-side secrets only (no API keys in frontend bundle)
+- Scoped environment validation (`email` vs `whatsapp`)
+- WhatsApp failures are non-blocking (form still succeeds)
 
 ---
 
-## Tech Stack
+## Architecture
 
-- `React` + `Vite`
-- `Tailwind CSS`
-- `Vercel Serverless Functions` (`api/*.js`)
-- `Brevo Transactional Email API` (email delivery)
-- `Meta WhatsApp Cloud API` (template messaging)
-- `Google Apps Script Webhook` (Google Sheet write endpoint)
+```mermaid
+flowchart LR
+  A[AuditForm.jsx] -->|POST| B[Google Apps Script]
+  A -->|POST /api/send-email| C[send-email.js]
+  A -->|POST /api/send-whatsapp| D[send-whatsapp.js]
+  C --> E[lib/email.js]
+  D --> F[lib/whatsapp.js]
+  E --> G[lib/config.js]
+  F --> G
+  E --> H[Brevo API]
+  F --> I[Meta Graph API]
+```
+
+| Layer | Responsibility |
+|--------|----------------|
+| `src/components/AuditForm.jsx` | UI, validation, orchestration |
+| `api/send-email.js` | HTTP handler for Brevo emails |
+| `api/send-whatsapp.js` | HTTP handler for WhatsApp templates |
+| `lib/config.js` | Centralized, scoped env validation |
+| `lib/email.js` | `validateEmail()`, `sendBrevoEmail()` |
+| `lib/whatsapp.js` | `formatIndianWhatsAppNumber()`, `sendWhatsAppTemplate()` |
 
 ---
 
@@ -27,87 +44,153 @@ There is **no Express/NestJS/separate Node backend**.
 
 ```txt
 .
+├─ api/
+│  ├─ send-email.js       # Vercel serverless route
+│  └─ send-whatsapp.js    # Vercel serverless route
+├─ lib/
+│  ├─ config.js           # getConfig('email' | 'whatsapp' | 'all')
+│  ├─ email.js            # Brevo helpers
+│  └─ whatsapp.js         # Meta WhatsApp helpers
 ├─ src/
 │  ├─ components/
 │  │  └─ AuditForm.jsx
-│  └─ ...
-├─ api/
-│  ├─ send-email.js
-│  └─ send-whatsapp.js
+│  ├─ App.jsx
+│  └─ main.jsx
 ├─ .env.example
-├─ package.json
-└─ README.md
+├─ vercel.json
+├─ vite.config.js
+└─ package.json
 ```
 
 ---
 
-## Form Submission Flow
+## Submission Flow
 
-When a valid form is submitted from `AuditForm.jsx`, the app performs:
+On successful form submit (`AuditForm.jsx`):
 
-1. Save lead to Google Sheet endpoint (`VITE_GOOGLE_SHEET_URL`)
-2. Send customer confirmation email (`/api/send-email`)
-3. Send admin lead notification email (`/api/send-email`)
-4. Send customer WhatsApp template message (`/api/send-whatsapp`)
-
-> WhatsApp failures are intentionally non-blocking.  
-> If WhatsApp fails, the error is logged and the success screen still appears.
+1. **Google Sheet** — `POST` to `VITE_GOOGLE_SHEET_URL` (opaque `no-cors` response)
+2. **Customer email** — `POST /api/send-email` with recipient from form
+3. **Admin email** — `POST /api/send-email` with `audience: "admin"` (recipient from `MAIL_ADMIN_EMAIL` on server)
+4. **WhatsApp** — `POST /api/send-whatsapp` (errors logged; success UI still shown)
 
 ---
 
 ## Environment Variables
 
-Copy `.env.example` to `.env.local` for local development:
+Copy the example file and fill in real values:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Set values:
+### Frontend (safe to expose — `VITE_` prefix)
 
-### Frontend-exposed variable
+| Variable | Description |
+|----------|-------------|
+| `VITE_GOOGLE_SHEET_URL` | Google Apps Script web app URL (`/exec`) |
 
-- `VITE_GOOGLE_SHEET_URL`  
-  Google Apps Script web app URL that receives form submission payload.
+The frontend reads **only** this variable. All email/WhatsApp credentials stay server-side.
 
-### Server-side email variables
+### Email — Brevo (server-side only)
 
-- `BREVO_API_KEY`
-- `MAIL_FROM_EMAIL`
-- `MAIL_FROM_NAME`
-- `MAIL_ADMIN_EMAIL`
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `BREVO_API_KEY` | Yes | Brevo API key (`xkeysib-...`) |
+| `MAIL_FROM_EMAIL` | Yes | Verified sender email in Brevo |
+| `MAIL_FROM_NAME` | Yes | Sender display name |
+| `MAIL_ADMIN_EMAIL` | Yes | Admin notification inbox |
 
-### Server-side WhatsApp variables
+### WhatsApp — Meta Cloud API (server-side only)
 
-- `WHATSAPP_ACCESS_TOKEN`
-- `WHATSAPP_PHONE_NUMBER_ID`
-- `WHATSAPP_BUSINESS_ACCOUNT_ID`
-- `WHATSAPP_TEMPLATE_NAME`
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `WHATSAPP_ACCESS_TOKEN` | Yes | Permanent or system user token |
+| `WHATSAPP_PHONE_NUMBER_ID` | Yes | Phone number ID from Meta |
+| `WHATSAPP_BUSINESS_ACCOUNT_ID` | Yes | WABA ID (validated at startup) |
+| `WHATSAPP_TEMPLATE_NAME` | Yes | Approved template name |
+| `WHATSAPP_API_VERSION` | No | Default: `v20.0` |
+| `WHATSAPP_LANGUAGE_CODE` | No | Default: `en` |
 
-> Never commit real secrets to git.
+### Removed (do not use)
+
+These were removed when migrating from MailerSend:
+
+- `MAILERSEND_API_KEY`
+- `MAILERSEND_FROM_EMAIL`
+- `MAILERSEND_FROM_NAME`
+- `MAILERSEND_ADMIN_EMAIL`
+- `VITE_MAILERSEND_*`
+- `VITE_ADMIN_EMAIL`
 
 ---
 
-## API Routes
+## API Reference
 
 ### `POST /api/send-email`
 
-Serverless route that sends email through Brevo API.  
-Expected body:
+Sends transactional email via [Brevo SMTP API v3](https://developers.brevo.com/reference/sendtransacemail).
+
+**Customer email**
 
 ```json
 {
-  "to_email": "user@example.com",
-  "to_name": "User Name",
-  "subject": "Email Subject",
-  "html": "<p>HTML body</p>"
+  "to_email": "customer@example.com",
+  "to_name": "Rahul Sharma",
+  "subject": "Audit Request Received",
+  "html": "<p>Thank you...</p>"
 }
 ```
 
+**Admin email** (recipient resolved server-side)
+
+```json
+{
+  "audience": "admin",
+  "subject": "New Audit Lead — My Brand",
+  "html": "<p>Lead details...</p>"
+}
+```
+
+**Validation**
+
+- `to_email` — valid email (or omitted when `audience: "admin"`)
+- `subject` — 3–200 characters
+- `html` — 20–200,000 characters
+
+**Success response**
+
+```json
+{
+  "ok": true,
+  "message": "Email sent successfully.",
+  "data": {
+    "audience": "customer",
+    "to_email": "customer@example.com",
+    "message_id": "..."
+  }
+}
+```
+
+**Error response**
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "INVALID_EMAIL",
+    "message": "A valid recipient email is required."
+  },
+  "details": null
+}
+```
+
+---
+
 ### `POST /api/send-whatsapp`
 
-Serverless route that sends an approved WhatsApp template message via Meta Cloud API.  
-Expected body:
+Sends an approved WhatsApp template to the submitted mobile number.
+
+**Request body**
 
 ```json
 {
@@ -118,84 +201,158 @@ Expected body:
 }
 ```
 
-Behavior:
+**Behavior**
 
-- mobile is normalized to `91XXXXXXXXXX`,
-- template body variables use `name`, `businessName`, and `auditType`,
-- invalid number returns `400`,
-- provider errors are forwarded with status,
-- missing env variables return `500`.
+- Mobile normalized to `91XXXXXXXXXX` (10-digit Indian number)
+- Template body parameters (in order): `name`, `businessName`, `auditType`
+- Language from `WHATSAPP_LANGUAGE_CODE` (default `en`)
+- Graph API version from `WHATSAPP_API_VERSION` (default `v20.0`)
+
+**Success response**
+
+```json
+{
+  "ok": true,
+  "message": "WhatsApp template sent successfully.",
+  "data": {
+    "to": "919876543210",
+    "business_account_id": "...",
+    "api_version": "v20.0",
+    "language_code": "en"
+  }
+}
+```
 
 ---
 
 ## Local Development
 
-Install dependencies:
+### Install and run frontend
 
 ```bash
 npm install
-```
-
-Start development server:
-
-```bash
 npm run dev
 ```
 
-Build for production:
+`npm run dev` starts the Vite frontend only. **Serverless routes (`/api/*`) are not available** unless you use Vercel’s dev server.
+
+### Full stack locally (recommended)
+
+Install the [Vercel CLI](https://vercel.com/docs/cli), link the project, and run:
 
 ```bash
-npm run build
+npx vercel dev
 ```
 
-Preview production build:
+Load env vars from `.env.local` (or pull from Vercel):
 
 ```bash
-npm run preview
+npx vercel env pull .env.local
+```
+
+### Other scripts
+
+```bash
+npm run build    # Production build
+npm run preview  # Preview dist/
+npm run lint     # ESLint
 ```
 
 ---
 
 ## Vercel Deployment
 
-1. Push code to your Git provider.
-2. Import the repository in Vercel.
-3. In Vercel project settings, add all env variables from `.env.example`.
-4. Redeploy (or deploy) the project.
-5. Verify serverless routes:
-   - `/api/send-email`
-   - `/api/send-whatsapp`
+1. Push the repository to GitHub/GitLab/Bitbucket.
+2. Import the project in [Vercel](https://vercel.com).
+3. **Settings → Environment Variables** — add every variable from `.env.example` for Production (and Preview if needed).
+4. Deploy. Vercel automatically deploys `api/*.js` as serverless functions.
+5. Confirm routes after deploy:
+   - `https://<your-domain>/api/send-email`
+   - `https://<your-domain>/api/send-whatsapp`
 
-Important:
+**Important**
 
-- `VITE_` variables are bundled for frontend usage.
-- Non-`VITE_` variables are only available in serverless functions.
+- Redeploy after changing environment variables.
+- `VITE_*` variables must be set at **build time** for the frontend bundle.
+- Email and WhatsApp env vars are read at **runtime** in serverless functions only.
+- Email and WhatsApp configs are validated independently—missing WhatsApp vars will not break the email route.
+
+---
+
+## WhatsApp Template Setup
+
+Your Meta template must match what `lib/whatsapp.js` sends:
+
+- **Type:** Utility/Marketing (as approved)
+- **Body variables (3):** customer name, business name, audit type
+- **Language code:** must match `WHATSAPP_LANGUAGE_CODE` (e.g. `en` or `en_US` per Meta)
+
+Example template body:
+
+```text
+Hi {{1}}, we received your audit request for {{2}} ({{3}}). Our team will respond within 24 hours.
+```
+
+---
+
+## Brevo Setup
+
+1. Create a Brevo account and generate an API key.
+2. Verify your sender domain/email (`MAIL_FROM_EMAIL`).
+3. Set `BREVO_API_KEY`, `MAIL_FROM_EMAIL`, `MAIL_FROM_NAME`, and `MAIL_ADMIN_EMAIL` in Vercel.
+4. Test with a form submission and check Brevo transactional logs.
 
 ---
 
 ## Testing Checklist
 
-### Functional success path
+### Happy path
 
-1. Submit form with valid data.
-2. Verify row appears in Google Sheet.
-3. Verify customer email is received.
-4. Verify admin email is received.
-5. Verify WhatsApp template message is received on submitted number.
-6. Verify success UI is shown.
+- [ ] Form submits without validation errors
+- [ ] New row in Google Sheet
+- [ ] Customer receives Brevo email
+- [ ] Admin receives Brevo email
+- [ ] WhatsApp template arrives on `+91` number
+- [ ] Success screen is shown
 
 ### WhatsApp failure tolerance
 
-1. Temporarily set wrong `WHATSAPP_ACCESS_TOKEN`.
-2. Submit form again.
-3. Verify Google Sheet + emails still work.
-4. Verify success UI still appears.
-5. Verify WhatsApp error appears in server logs.
+- [ ] Temporarily invalidate `WHATSAPP_ACCESS_TOKEN`
+- [ ] Submit again — sheet + emails succeed, success UI still shown
+- [ ] Check Vercel function logs for `send-whatsapp route failure`
+
+### Email-only config
+
+- [ ] With only Brevo env vars set, `/api/send-email` returns `200`
+- [ ] Missing Brevo vars return clear `500` with config error in logs
 
 ---
 
-## Notes
+## Troubleshooting
 
-- Use only **approved WhatsApp templates** for production sends.
-- Template variables count/order in Meta template must match what `api/send-whatsapp.js` sends.
-- If your template language is not English, update `language.code` in `api/send-whatsapp.js`.
+| Symptom | Likely cause | Fix |
+|---------|----------------|-----|
+| `500` on `/api/send-email` | Missing Brevo env vars | Set `BREVO_API_KEY`, `MAIL_FROM_*`, `MAIL_ADMIN_EMAIL`; redeploy |
+| Brevo `401` / `403` | Invalid API key or unverified sender | Regenerate key; verify sender in Brevo |
+| Email works locally but not on Vercel | Env not set for Production | Add vars in Vercel dashboard; redeploy |
+| `Error: [object Object]` in console | Old bundle or API error object | Hard refresh; check Network → Response `error.message` |
+| WhatsApp never arrives | Template/language mismatch or token | Align `WHATSAPP_TEMPLATE_NAME` and `WHATSAPP_LANGUAGE_CODE` with Meta |
+| `/api/*` 404 in `npm run dev` | Vite does not run serverless routes | Use `npx vercel dev` |
+| Google Sheet empty | Wrong `VITE_GOOGLE_SHEET_URL` or script permissions | Test Apps Script deploy URL manually |
+
+View serverless logs: Vercel project → **Deployments** → select deployment → **Functions** → `send-email` / `send-whatsapp`.
+
+---
+
+## Security
+
+- API keys and tokens exist only in serverless `process.env`.
+- Admin email address is never exposed via `VITE_*` variables.
+- Do not commit `.env`, `.env.local`, or real credentials.
+- `.env.example` contains placeholders only.
+
+---
+
+## License
+
+Private project — BeBeyond Digital.
