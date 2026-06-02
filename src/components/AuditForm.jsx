@@ -12,10 +12,12 @@
  */
 
 import { useState } from 'react'
-import { FiUser, FiPhone, FiMail, FiGlobe, FiBriefcase } from 'react-icons/fi'
+import { FiUser, FiPhone, FiMail, FiGlobe, FiBriefcase, FiCheckCircle, FiAlertTriangle, FiTarget } from 'react-icons/fi'
 import { FaInstagram, FaWhatsapp } from 'react-icons/fa'
 import { HiClipboardDocumentList, HiCheckCircle } from 'react-icons/hi2'
-import { MdBusiness } from 'react-icons/md'
+import { MdBusiness, MdBarChart, MdPhoto, MdLanguage } from 'react-icons/md'
+import { RiRocketLine, RiSparklingLine } from 'react-icons/ri'
+import { BsStars } from 'react-icons/bs'
 
 // ─── Frontend-safe env vars (VITE_ only) ─────────────────────────────────────
 const GOOGLE_SHEET_URL = import.meta.env.VITE_GOOGLE_SHEET_URL
@@ -92,13 +94,13 @@ function customerEmailHtml({ name, businessName, businessType, auditLabel, insta
   return `
   <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0B1A2D;color:#fff;border-radius:12px;overflow:hidden;">
     <div style="background:linear-gradient(135deg,#219ebc,#fb8500);padding:32px 40px;text-align:center;">
-      <h1 style="margin:0;font-size:24px;color:#fff;">✅ Audit Request Received!</h1>
+      <h1 style="margin:0;font-size:24px;color:#fff;">Audit Request Received!</h1>
       <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">BeBeyond Digital</p>
     </div>
     <div style="padding:32px 40px;">
       <p style="font-size:16px;">Hi <strong>${name}</strong>,</p>
       <p style="color:rgba(255,255,255,0.7);line-height:1.7;">
-        Thank you for submitting your <strong style="color:#219ebc;">Free Digital Audit</strong> request! 🎉<br/>
+        Thank you for submitting your <strong style="color:#219ebc;">Free Digital Audit</strong> request!<br/>
         We'll review and send you a detailed report within <strong>24 hours</strong>.
       </p>
       <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:20px 24px;margin:24px 0;">
@@ -112,8 +114,8 @@ function customerEmailHtml({ name, businessName, businessType, auditLabel, insta
         </table>
       </div>
       <p style="color:rgba(255,255,255,0.6);font-size:14px;line-height:1.8;">
-        Stay tuned — big improvements are coming! 🚀<br/><br/>
-        — <strong>Team BeBeyond Digital</strong><br/>📞 +91 99 1867 1867
+        Stay tuned — big improvements are coming!<br/><br/>
+        — <strong>Team BeBeyond Digital</strong><br/>+91 99 1867 1867
       </p>
     </div>
   </div>`
@@ -124,7 +126,7 @@ function adminEmailHtml({ name, mobile, email, businessName, businessType, audit
   return `
   <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9fafb;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
     <div style="background:#0B1A2D;padding:24px 32px;">
-      <h2 style="margin:0;color:#fb8500;font-size:20px;">🔔 New Audit Lead</h2>
+      <h2 style="margin:0;color:#fb8500;font-size:20px;">New Audit Lead</h2>
       <p style="margin:4px 0 0;color:rgba(255,255,255,0.5);font-size:13px;">${submittedAt}</p>
     </div>
     <div style="padding:28px 32px;">
@@ -133,7 +135,7 @@ function adminEmailHtml({ name, mobile, email, businessName, businessType, audit
         <tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 0;color:#6b7280;">Mobile</td><td style="color:#111827;">+91 ${mobile}</td></tr>
         <tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 0;color:#6b7280;">Email</td><td style="color:#219ebc;">${email}</td></tr>
         <tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 0;color:#6b7280;">Business</td><td style="color:#111827;font-weight:600;">${businessName}</td></tr>
-        <tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 0;color:#6b7280;">Biz Type</td><td style="color:#111827;">${businessType}</td></tr>
+        <tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 0;color:#6b7280;">Business Type</td><td style="color:#111827;">${businessType}</td></tr>
         <tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 0;color:#6b7280;">Audit</td><td style="color:#fb8500;font-weight:bold;">${auditLabel}</td></tr>
         <tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 0;color:#6b7280;">Instagram</td><td style="color:#111827;">${instagram}</td></tr>
         <tr><td style="padding:10px 0;color:#6b7280;">Website</td><td style="color:#111827;">${website}</td></tr>
@@ -167,10 +169,10 @@ const initialState = {
 }
 
 export default function AuditForm() {
-  const [form, setForm]                   = useState(initialState)
-  const [errors, setErrors]               = useState({})
-  const [status, setStatus]               = useState('idle') // idle | loading | success | error
-  const [whatsappWarning, setWhatsappWarning] = useState(false) // ← NEW
+  const [form, setForm]                       = useState(initialState)
+  const [errors, setErrors]                   = useState({})
+  const [status, setStatus]                   = useState('idle') // idle | loading | success | error
+  const [whatsappWarning, setWhatsappWarning] = useState(false)
 
   // ── Validation ────────────────────────────────────────────────────────────
   const validate = () => {
@@ -210,28 +212,26 @@ export default function AuditForm() {
 
     if (!form.businessType) e.businessType = 'Please select business type'
 
-    if (form.auditType === 'both' || form.auditType === 'instagram') {
-      const ig = form.instagram.trim().replace('@', '')
-      if (!ig) {
-        e.instagram = 'Instagram handle is required'
-      } else if (ig.length < 2) {
-        e.instagram = 'Handle too short'
-      } else if (!/^[a-zA-Z0-9._]{1,30}$/.test(ig)) {
-        e.instagram = 'Invalid Instagram handle (a–z, 0–9, . _ only)'
-      }
+    // ── Instagram is always required (collected from every user) ──────────
+    const ig = form.instagram.trim().replace('@', '')
+    if (!ig) {
+      e.instagram = 'Instagram handle is required'
+    } else if (ig.length < 2) {
+      e.instagram = 'Handle too short'
+    } else if (!/^[a-zA-Z0-9._]{1,30}$/.test(ig)) {
+      e.instagram = 'Invalid Instagram handle (a–z, 0–9, . _ only)'
     }
 
-    if (form.auditType === 'both' || form.auditType === 'website') {
-      const url = form.website.trim()
-      if (!url) {
-        e.website = 'Website URL is required'
-      } else {
-        try {
-          const parsed = new URL(url.startsWith('http') ? url : 'https://' + url)
-          if (!parsed.hostname.includes('.')) e.website = 'Enter a valid URL'
-        } catch {
-          e.website = 'Enter a valid URL (e.g. https://yourbrand.com)'
-        }
+    // ── Website is always required (collected from every user) ────────────
+    const url = form.website.trim()
+    if (!url) {
+      e.website = 'Website URL is required'
+    } else {
+      try {
+        const parsed = new URL(url.startsWith('http') ? url : 'https://' + url)
+        if (!parsed.hostname.includes('.')) e.website = 'Enter a valid URL'
+      } catch {
+        e.website = 'Enter a valid URL (e.g. https://yourbrand.com)'
       }
     }
 
@@ -250,7 +250,7 @@ export default function AuditForm() {
     if (Object.keys(errs).length) { setErrors(errs); return }
 
     setStatus('loading')
-    setWhatsappWarning(false) // ← reset on each submit
+    setWhatsappWarning(false)
 
     const auditLabel =
       form.auditType === 'both'      ? 'Instagram + Website' :
@@ -260,8 +260,8 @@ export default function AuditForm() {
       // 1. Save to Google Sheets
       await submitToGoogleSheet({
         ...form,
-        instagram: form.instagram ? `@${form.instagram.replace('@','')}` : '-',
-        website:   form.website   || '-',
+        instagram:   `@${form.instagram.replace('@', '')}`,
+        website:     form.website,
         submittedAt: new Date().toISOString(),
       })
 
@@ -272,8 +272,8 @@ export default function AuditForm() {
         businessName: form.businessName,
         businessType: form.businessType,
         auditLabel,
-        instagram:    form.instagram ? `@${form.instagram.replace('@', '')}` : 'N/A',
-        website:      form.website || 'N/A',
+        instagram:    `@${form.instagram.replace('@', '')}`,
+        website:      form.website,
         submittedAt:  new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
       }
 
@@ -281,14 +281,14 @@ export default function AuditForm() {
       await sendEmail({
         to_email: form.email,
         to_name:  form.name,
-        subject:  '✅ Audit Request Received — BeBeyond Digital',
+        subject:  'Audit Request Received — BeBeyond Digital',
         html:     customerEmailHtml(emailData),
       })
 
       // 3. Admin notification email
       await sendEmail({
         audience: 'admin',
-        subject:  `🔔 New Audit Lead — ${form.businessName}`,
+        subject:  `New Audit Lead — ${form.businessName}`,
         html:     adminEmailHtml(emailData),
       })
 
@@ -302,7 +302,7 @@ export default function AuditForm() {
         })
       } catch (whatsappError) {
         console.error('WhatsApp send failed:', whatsappError?.message || whatsappError)
-        setWhatsappWarning(true) // ← show warning banner on success screen
+        setWhatsappWarning(true)
       }
 
       setStatus('success')
@@ -324,24 +324,27 @@ export default function AuditForm() {
             <HiCheckCircle className="text-white text-4xl" />
           </div>
           <h2 className="font-['Bricolage_Grotesque',sans-serif] text-3xl font-extrabold text-white mb-3">
-            You're All Set! 🎉
+            You're All Set! <BsStars className="inline text-[#fb8500] mb-1" />
           </h2>
           <p className="text-white/60 text-base leading-relaxed mb-2">
             Thank you <span className="text-[#219ebc] font-semibold">{form.name}</span>!
             Your audit request has been received.
           </p>
-          <p className="text-white/50 text-sm mb-2">
-            ✅ Confirmation email sent to <span className="text-white/70">{form.email}</span>
+          <p className="text-white/50 text-sm mb-2 flex items-center justify-center gap-1.5">
+            <FiCheckCircle className="text-green-400 shrink-0" />
+            Confirmation email sent to <span className="text-white/70">{form.email}</span>
           </p>
 
-          {/* WhatsApp status — shows warning if failed, normal message if ok */}
+          {/* WhatsApp status */}
           {whatsappWarning ? (
-            <p className="text-amber-400 text-sm mb-8 bg-amber-400/10 border border-amber-400/20 rounded-xl py-2.5 px-4">
-              ⚠️ WhatsApp message deliver nahi hua. Hum jald contact karenge.
+            <p className="text-amber-400 text-sm mb-8 bg-amber-400/10 border border-amber-400/20 rounded-xl py-2.5 px-4 flex items-center justify-center gap-2">
+              <FiAlertTriangle className="shrink-0" />
+              WhatsApp message could not be delivered. We will contact you shortly.
             </p>
           ) : (
-            <p className="text-white/50 text-sm mb-8">
-              📱 WhatsApp confirmation sent to +91 {form.mobile}
+            <p className="text-white/50 text-sm mb-8 flex items-center justify-center gap-1.5">
+              <FaWhatsapp className="text-green-400 shrink-0" />
+              WhatsApp confirmation sent to +91 {form.mobile}
             </p>
           )}
 
@@ -475,16 +478,52 @@ export default function AuditForm() {
                 </div>
               </Field>
 
-              {/* ── Audit Type — 3-column card grid ──────────────────────── */}
+              {/* ── Instagram Handle — always visible, always required ─────── */}
+              <Field
+                label="Instagram Handle"
+                icon={<FaInstagram />}
+                error={errors.instagram}
+                className="md:col-span-2"
+              >
+                <div className="flex">
+                  <span className="flex items-center px-3 bg-white/[0.06] border border-r-0 border-white/[0.12]
+                    rounded-l-xl text-white/50 text-sm select-none">@</span>
+                  <input
+                    type="text"
+                    placeholder="yourbrand"
+                    value={form.instagram}
+                    onChange={e => handleChange('instagram', e.target.value.replace(/[@\s]/g, ''))}
+                    className={inputCls(errors.instagram) + ' rounded-l-none'}
+                  />
+                </div>
+              </Field>
+
+              {/* ── Website URL — always visible, always required ─────────── */}
+              <Field
+                label="Website URL"
+                icon={<FiGlobe />}
+                error={errors.website}
+                className="md:col-span-2"
+              >
+                <input
+                  type="url"
+                  placeholder="https://yourbrand.com"
+                  value={form.website}
+                  onChange={e => handleChange('website', e.target.value)}
+                  className={inputCls(errors.website)}
+                />
+              </Field>
+
+              {/* ── Audit Type — 3-column card grid */}
               <div className="md:col-span-2">
                 <label className="block text-xs font-semibold uppercase tracking-widest text-white/50 mb-3">
                   What Would You Like Audited?
                 </label>
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { val: 'both',      label: 'Instagram + Website', icon: '📊' },
-                    { val: 'instagram', label: 'Instagram Only',      icon: '📸' },
-                    { val: 'website',   label: 'Website Only',        icon: '🌐' },
+                    { val: 'both',      label: 'Instagram + Website', icon: <MdBarChart size={28} /> },
+                    { val: 'instagram', label: 'Instagram Only',      icon: <FaInstagram size={26} /> },
+                    { val: 'website',   label: 'Website Only',        icon: <MdLanguage size={28} /> },
                   ].map(({ val, label, icon }) => (
                     <label
                       key={val}
@@ -501,7 +540,9 @@ export default function AuditForm() {
                         onChange={() => handleChange('auditType', val)}
                         className="sr-only"
                       />
-                      <span className="text-2xl">{icon}</span>
+                      <span className={form.auditType === val ? 'text-[#5dd1ec]' : 'text-white/40'}>
+                        {icon}
+                      </span>
                       <span className="leading-tight">{label}</span>
                       {/* Radio dot */}
                       <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all
@@ -515,63 +556,12 @@ export default function AuditForm() {
                 </div>
               </div>
 
-              {/* ── Instagram Handle — full width, always visible ─────────── */}
-              <Field
-                label="Instagram Handle"
-                icon={<FaInstagram />}
-                error={errors.instagram}
-                className={`md:col-span-2 transition-opacity duration-200 ${
-                  form.auditType === 'website' ? 'opacity-40 pointer-events-none' : ''
-                }`}
-              >
-                <div className="flex">
-                  <span className="flex items-center px-3 bg-white/[0.06] border border-r-0 border-white/[0.12]
-                    rounded-l-xl text-white/50 text-sm select-none">@</span>
-                  <input
-                    type="text"
-                    placeholder="yourbrand"
-                    value={form.instagram}
-                    onChange={e => handleChange('instagram', e.target.value.replace(/[@\s]/g, ''))}
-                    disabled={form.auditType === 'website'}
-                    className={inputCls(errors.instagram) + ' rounded-l-none'}
-                  />
-                </div>
-                {form.auditType === 'website' && (
-                  <p className="mt-1.5 text-[11px] text-white/30 italic">
-                    Not required for Website-only audit
-                  </p>
-                )}
-              </Field>
-
-              {/* ── Website URL — full width, always visible ──────────────── */}
-              <Field
-                label="Website URL"
-                icon={<FiGlobe />}
-                error={errors.website}
-                className={`md:col-span-2 transition-opacity duration-200 ${
-                  form.auditType === 'instagram' ? 'opacity-40 pointer-events-none' : ''
-                }`}
-              >
-                <input
-                  type="url"
-                  placeholder="https://yourbrand.com"
-                  value={form.website}
-                  onChange={e => handleChange('website', e.target.value)}
-                  disabled={form.auditType === 'instagram'}
-                  className={inputCls(errors.website)}
-                />
-                {form.auditType === 'instagram' && (
-                  <p className="mt-1.5 text-[11px] text-white/30 italic">
-                    Not required for Instagram-only audit
-                  </p>
-                )}
-              </Field>
-
             </div>
 
             {/* Error banner */}
             {status === 'error' && (
-              <p className="mt-5 text-center text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl py-3 px-4">
+              <p className="mt-5 text-center text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl py-3 px-4 flex items-center justify-center gap-2">
+                <FiAlertTriangle className="shrink-0" />
                 Something went wrong. Please try again or WhatsApp us at +91 99 1867 1867.
               </p>
             )}
@@ -605,8 +595,9 @@ export default function AuditForm() {
               )}
             </button>
 
-            <p className="mt-4 text-center text-xs text-white/30">
-              No spam. No credit card. Just a free honest audit. 🎯
+            <p className="mt-4 text-center text-xs text-white/30 flex items-center justify-center gap-1.5">
+              <FiTarget className="shrink-0" />
+              No spam. No credit card. Just a free honest audit.
             </p>
           </form>
         </div>

@@ -35,7 +35,7 @@ export default function Footer() {
           bg-[#0B1A2D]
           px-[5%] pt-[60px] pb-[40px]
           text-center
-          font-[PublicSans,sans-serif]
+          font-['Public_Sans',sans-serif]
           md:pb-[40px] md:pt-[80px]
         "
       >
@@ -216,7 +216,7 @@ export default function Footer() {
         className="
           border-t border-white/[0.05] bg-[#04070d]
           px-[5%] py-7 text-center
-          font-[PublicSans,sans-serif]
+          font-['Public_Sans',sans-serif]
         "
         initial={{ opacity: 0 }}
         animate={inView ? { opacity: 1 } : {}}
@@ -253,7 +253,7 @@ export default function Footer() {
           "
         >
           <HiArrowRight size={18} aria-hidden />
-          Book Your Free Audit — Only 5 Spots Left
+          Book Your Free Audit — Only Few Spots Left
         </a>
       </div>
     </>

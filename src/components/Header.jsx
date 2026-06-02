@@ -87,7 +87,7 @@ export default function Header() {
           {/* Call CTA */}
           <a
             href="tel:+919026861110"
-            className="group flex items-center gap-2 sm:gap-3 no-underline font-[PublicSans,sans-serif]"
+            className="group flex items-center gap-2 sm:gap-3 no-underline font-['Public_Sans',sans-serif]"
           >
             {/* Phone icon */}
             <PiPhoneCall
@@ -111,7 +111,7 @@ export default function Header() {
                 text-xs sm:text-sm lg:text-base
                 transition-colors duration-200 group-hover:text-[#219ebc]
               ">
-                +91&nbsp;90&nbsp;2686&nbsp;1110
+                +91&nbsp;99&nbsp;1867&nbsp;1867
               </span>
             </div>
           </a>
