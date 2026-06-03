@@ -286,11 +286,11 @@ export default function AuditForm() {
       })
 
       // 3. Admin notification email
-      await sendEmail({
-        audience: 'admin',
-        subject:  `New Audit Lead — ${form.businessName}`,
-        html:     adminEmailHtml(emailData),
-      })
+      // await sendEmail({
+      //   audience: 'admin',
+      //   subject:  `New Audit Lead — ${form.businessName}`,
+      //   html:     adminEmailHtml(emailData),
+      // })
 
       // 4. WhatsApp template message (non-blocking)
       try {
