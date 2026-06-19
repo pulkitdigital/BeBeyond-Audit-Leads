@@ -212,21 +212,17 @@ export default function AuditForm() {
 
     if (!form.businessType) e.businessType = 'Please select business type'
 
-    // ── Instagram is always required (collected from every user) ──────────
+    // ── Instagram is optional — only validated if user enters something ───
     const ig = form.instagram.trim().replace('@', '')
-    if (!ig) {
-      e.instagram = 'Instagram handle is required'
-    } else if (ig.length < 2) {
+    if (ig && ig.length < 2) {
       e.instagram = 'Handle too short'
-    } else if (!/^[a-zA-Z0-9._]{1,30}$/.test(ig)) {
+    } else if (ig && !/^[a-zA-Z0-9._]{1,30}$/.test(ig)) {
       e.instagram = 'Invalid Instagram handle (a–z, 0–9, . _ only)'
     }
 
-    // ── Website is always required (collected from every user) ────────────
+    // ── Website is optional — only validated if user enters something ─────
     const url = form.website.trim()
-    if (!url) {
-      e.website = 'Website URL is required'
-    } else {
+    if (url) {
       try {
         const parsed = new URL(url.startsWith('http') ? url : 'https://' + url)
         if (!parsed.hostname.includes('.')) e.website = 'Enter a valid URL'
@@ -256,12 +252,15 @@ export default function AuditForm() {
       form.auditType === 'both'      ? 'Instagram + Website' :
       form.auditType === 'instagram' ? 'Instagram Only' : 'Website Only'
 
+    const instagramValue = form.instagram.trim() ? `@${form.instagram.replace('@', '')}` : '-'
+    const websiteValue   = form.website.trim() || '-'
+
     try {
       // 1. Save to Google Sheets
       await submitToGoogleSheet({
         ...form,
-        instagram:   `@${form.instagram.replace('@', '')}`,
-        website:     form.website,
+        instagram:   instagramValue,
+        website:     websiteValue,
         submittedAt: new Date().toISOString(),
       })
 
@@ -272,8 +271,8 @@ export default function AuditForm() {
         businessName: form.businessName,
         businessType: form.businessType,
         auditLabel,
-        instagram:    `@${form.instagram.replace('@', '')}`,
-        website:      form.website,
+        instagram:    instagramValue,
+        website:      websiteValue,
         submittedAt:  new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
       }
 
@@ -478,7 +477,7 @@ export default function AuditForm() {
                 </div>
               </Field>
 
-              {/* ── Instagram Handle — always visible, always required ─────── */}
+              {/* ── Instagram Handle — optional ─────────────────────────────── */}
               <Field
                 label="Instagram Handle"
                 icon={<FaInstagram />}
@@ -498,7 +497,7 @@ export default function AuditForm() {
                 </div>
               </Field>
 
-              {/* ── Website URL — always visible, always required ─────────── */}
+              {/* ── Website URL — optional ──────────────────────────────────── */}
               <Field
                 label="Website URL"
                 icon={<FiGlobe />}
