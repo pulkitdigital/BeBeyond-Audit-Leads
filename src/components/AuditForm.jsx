@@ -336,7 +336,7 @@ export default function AuditForm() {
           </p>
 
           {/* WhatsApp status */}
-          {whatsappWarning ? (
+          {/* {whatsappWarning ? (
             <p className="text-amber-400 text-sm mb-8 bg-amber-400/10 border border-amber-400/20 rounded-xl py-2.5 px-4 flex items-center justify-center gap-2">
               <FiAlertTriangle className="shrink-0" />
               WhatsApp message could not be delivered. We will contact you shortly.
@@ -346,7 +346,7 @@ export default function AuditForm() {
               <FaWhatsapp className="text-green-400 shrink-0" />
               WhatsApp confirmation sent to +91 {form.mobile}
             </p>
-          )}
+          )} */}
 
           <button
             onClick={() => { setForm(initialState); setStatus('idle'); setWhatsappWarning(false) }}
